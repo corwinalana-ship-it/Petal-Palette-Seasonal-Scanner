@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Petal Palettes — 12-Season Color Analysis</title>
+  <style>
+    :root {
+      --cream: #faf6f0;
+      --cream-soft: #f4ede2;
+      --blush: #f4d4d4;
+      --blush-deep: #e8b4b8;
+      --dusty-rose: #c48b8b;
+      --sage: #a8b89a;
+      --gold: #c9a961;
+      --brown: #4a352a;
+      --brown-soft: #6b5244;
+      --shadow: rgba(74, 53, 42, 0.08);
+      --shadow-strong: rgba(74, 53, 42, 0.15);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      background: var(--cream);
+      color: var(--brown);
+      font-family: Arial, sans-serif;
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    body {
+      background-image:
+        radial-gradient(circle at 10% 10%, rgba(244, 212, 212, 0.35) 0%, transparent 35%),
+        radial-gradient(circle at 90% 85%, rgba(168, 184, 154, 0.25) 0%, transparent 40%),
+        radial-gradient(circle at 80% 15%, rgba(201, 169, 97, 0.18) 0%, transparent 35%);
+      background-attachment: fixed;
+    }
+
+    h1, h2, h3, h4 {
+      font-family: Georgia, 'Times New Roman', serif;
+      font-weight: 400;
+      color: var(--brown);
+      letter-spacing: 0.5px;
+    }
+
+    .container {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 48px 24px 80px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 48px;
+      position: relative;
+    }
+
+    .brand-mark {
+      display: inline-block;
+      margin-bottom: 16px;
+      opacity: 0.9;
+    }
+
+    .brand-mark svg {
+      width: 72px;
+      height: 72px;
+    }
+
+    h1.title {
+      font-size: clamp(2.2rem, 6vw, 3.2rem);
+      letter-spacing: 2px;
+      font-variant: small-caps;
+      margin-bottom: 8px;
+    }
+
+    .tagline {
+      font-family: Georgia, serif;
+      font-style: italic;
+      color: var(--brown-soft);
+      font-size: 1.05rem;
+      letter-spacing: 0.5px;
+    }
+
+    .divider {
+      width: 60px;
+      height: 1px;
+      background: var(--dusty-rose);
+      margin: 24px auto;
+      opacity: 0.6;
+    }
+
+    .card {
+      background: rgba(255, 253, 250, 0.8);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border-radius: 16px;
+      padding: 40px 32px;
+      box-shadow: 0 4px 24px var(--shadow);
+      border: 1px solid rgba(232, 180, 184, 0.2);
+    }
+
+    .api-key-section {
+      margin-bottom: 24px;
+      padding-bottom: 24px;
+      border-bottom: 1px dashed rgba(196, 139, 139, 0.3);
+    }
+
+    .api-key-section label {
+      display: block;
+      font-family: Georgia, serif;
+      font-size: 0.95rem;
+      color: var(--brown-soft);
+      margin-bottom: 8px;
+      font-style: italic;
+    }
+
+    .api-key-section input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid rgba(196, 139, 139, 0.3);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.6);
+      font-family: Arial, sans-serif;
+      font-size: 0.9rem;
+      color: var(--brown);
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .api-key-section input:focus {
+      border-color: var(--dusty-rose);
+    }
+
+    .api-key-hint {
+      font-size: 0.78rem;
+      color: var(--brown-soft);
+      margin-top: 6px;
+      opacity: 0.75;
+    }
+
+    .upload-area {
+      border: 2px dashed var(--blush-deep);
+      border-radius: 12px;
+      padding: 48px 24px;
+      text-align: center;
+      background: rgba(244, 237, 226, 0.35);
+      cursor: pointer;
+      transition: all 0.25s ease;
+      position: relative;
+    }
+
+    .upload-area:hover,
+    .upload-area.dragging {
+      background: rgba(244, 212, 212, 0.35);
+      border-color: var(--dusty-rose);
+      transform: translateY(-1px);
+    }
+
+    .upload-icon {
+      font-size: 2.4rem;
+      margin-bottom: 12px;
+      opacity: 0.7;
+    }
+
+    .upload-area h3 {
+      font-size: 1.3rem;
+      margin-bottom: 6px;
+    }
+
+    .upload-area p {
+      color: var(--brown-soft);
+      font-size: 0.95rem;
+    }
+
+    .upload-area input[type="file"] {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .preview-wrapper {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      margin-top: 8px;
+    }
+
+    .preview-wrapper.active {
+      display: flex;
+    }
+
+    .preview-image {
+      width: 220px;
+      height: 220px;
+      object-fit: cover;
+      border-radius: 50%;
+      box-shadow: 0 6px 24px var(--shadow-strong);
+      border: 4px solid #fff;
+    }
+
+    .button-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    button {
+      font-family: Georgia, serif;
+      font-size: 1rem;
+      padding: 12px 28px;
+      border-radius: 999px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      letter-spacing: 0.5px;
+    }
+
+    .btn-primary {
+      background: var(--dusty-rose);
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(196, 139, 139, 0.4);
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: var(--brown-soft);
+      transform: translateY(-1px);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--brown-soft);
+      border: 1px solid rgba(107, 82, 68, 0.3);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(244, 212, 212, 0.3);
+      color: var(--brown);
+    }
+
+    .loading {
+      display: none;
+      text-align: center;
+      padding: 48px 16px;
+    }
+
+    .loading.active { display: block; }
+
+    .loading-petal {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 20px;
+      animation: spin 4s linear infinite;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+      font-family: Georgia, serif;
+      font-style: italic;
+      color: var(--brown-soft);
+      font-size: 1.1rem;
+    }
+
+    .error-box {
+      display: none;
+      background: rgba(244, 212, 212, 0.4);
+      border: 1px solid var(--blush-deep);
+      border-radius: 10px;
+      padding: 20px 24px;
+      margin-top: 16px;
+      text-align: center;
+    }
+
+    .error-box.active { display: block; }
+
+    .error-box p {
+      color: var(--brown);
+      margin-bottom: 12px;
+    }
+
+    .results {
+      display: none;
+      margin-top: 32px;
+    }
+
+    .results.active { display: block; }
+
+    .season-header {
+      text-align: center;
+      padding: 24px 16px 32px;
+    }
+
+    .family-label {
+      font-family: Georgia, serif;
+      font-style: italic;
+      color: var(--dusty-rose);
+      font-size: 1rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .season-name {
+      font-size: clamp(2rem, 5vw, 2.8rem);
+      margin-bottom: 20px;
+      font-variant: small-caps;
+      letter-spacing: 1.5px;
+    }
+
+    .attr-row {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+
+    .attr-chip {
+      background: rgba(244, 237, 226, 0.8);
+      border: 1px solid rgba(196, 139, 139, 0.25);
+      border-radius: 999px;
+      padding: 6px 16px;
+      font-size: 0.85rem;
+      color: var(--brown-soft);
+      font-family: Georgia, serif;
+    }
+
+    .attr-chip strong {
+      color: var(--brown);
+      font-weight: 400;
+      text-transform: capitalize;
+    }
+
+    .description {
+      max-width: 640px;
+      margin: 0 auto;
+      font-size: 1.05rem;
+      line-height: 1.75;
+      color: var(--brown-soft);
+      text-align: center;
+      font-family: Georgia, serif;
+      font-style: italic;
+    }
+
+    .palette-section {
+      margin-top: 40px;
+    }
+
+    .palette-title {
+      text-align: center;
+      font-size: 1.3rem;
+      margin-bottom: 6px;
+      letter-spacing: 1px;
+    }
+
+    .palette-subtitle {
+      text-align: center;
+      color: var(--brown-soft);
+      font-size: 0.9rem;
+      font-style: italic;
+      margin-bottom: 24px;
+      font-family: Georgia, serif;
+    }
+
+    .swatch-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+      gap: 20px 12px;
+      justify-items: center;
+      padding: 0 8px;
+    }
+
+    .swatch {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+    }
+
+    .swatch-petal {
+      width: 72px;
+      height: 72px;
+      border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+      box-shadow: 0 4px 12px var(--shadow-strong), inset 0 -4px 8px rgba(0,0,0,0.06);
+      transition: transform 0.25s ease;
+      position: relative;
+    }
+
+    .swatch-petal:hover {
+      transform: scale(1.08) rotate(-4deg);
+    }
+
+    .swatch-petal.avoid {
+      border-radius: 50%;
+      opacity: 0.65;
+      position: relative;
+    }
+
+    .swatch-petal.avoid::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 10%;
+      right: 10%;
+      height: 2px;
+      background: var(--brown);
+      transform: rotate(-35deg);
+      opacity: 0.55;
+    }
+
+    .swatch-name {
+      font-size: 0.78rem;
+      color: var(--brown-soft);
+      text-align: center;
+      line-height: 1.3;
+      font-family: Georgia, serif;
+    }
+
+    .swatch-hex {
+      font-size: 0.68rem;
+      color: var(--brown-soft);
+      opacity: 0.6;
+      font-family: 'Courier New', monospace;
+      letter-spacing: 0.5px;
+    }
+
+    .avoid-section {
+      margin-top: 48px;
+      padding-top: 32px;
+      border-top: 1px dashed rgba(196, 139, 139, 0.3);
+    }
+
+    .restart-row {
+      text-align: center;
+      margin-top: 48px;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 48px;
+      color: var(--brown-soft);
+      font-size: 0.82rem;
+      font-family: Georgia, serif;
+      font-style: italic;
+      opacity: 0.7;
+    }
+
+    @media (max-width: 520px) {
+      .container { padding: 32px 16px 60px; }
+      .card { padding: 28px 20px; }
+      .upload-area { padding: 32px 16px; }
+      .preview-image { width: 180px; height: 180px; }
+      .swatch-petal { width: 60px; height: 60px; }
+      .swatch-grid { grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <g transform="translate(50,50)" opacity="0.85">
+            <ellipse cx="0" cy="-22" rx="10" ry="22" fill="#e8b4b8" opacity="0.7" transform="rotate(0)"/>
+            <ellipse cx="0" cy="-22" rx="10" ry="22" fill="#c9a961" opacity="0.65" transform="rotate(60)"/>
+            <ellipse cx="0" cy="-22" rx="10" ry="22" fill="#a8b89a" opacity="0.65" transform="rotate(120)"/>
+            <ellipse cx="0" cy="-22" rx="10" ry="22" fill="#8ca8c4" opacity="0.65" transform="rotate(180)"/>
+            <ellipse cx="0" cy="-22" rx="10" ry="22" fill="#b49ac4" opacity="0.65" transform="rotate(240)"/>
+            <ellipse cx="0" cy="-22" rx="10" ry="22" fill="#d4a5a5" opacity="0.7" transform="rotate(300)"/>
+          </g>
+        </svg>
+      </div>
+      <h1 class="title">Petal Palettes</h1>
+      <p class="tagline">where beauty blooms in every hue</p>
+      <div class="divider"></div>
+    </header>
+
+    <main>
+      <section class="card" id="upload-card">
+        <div class="api-key-section">
+          <label for="api-key">Your Anthropic API Key</label>
+          <input type="password" id="api-key" placeholder="sk-ant-..." autocomplete="off" />
+          <p class="api-key-hint">Stored only in your browser. Required to analyze your photo.</p>
+        </div>
+
+        <div class="upload-area" id="upload-area">
+          <div class="upload-icon">✿</div>
+          <h3>Upload your portrait</h3>
+          <p>A well-lit, natural-light photo works best</p>
+          <input type="file" id="file-input" accept="image/png, image/jpeg" />
+        </div>
+
+        <div class="preview-wrapper" id="preview-wrapper">
+          <img id="preview-image" class="preview-image" alt="Your uploaded photo" />
+          <div class="button-row">
+            <button class="btn-primary" id="analyze-btn">Reveal My Season</button>
+            <button class="btn-secondary" id="change-photo-btn">Change Photo</button>
+          </div>
+        </div>
+
+        <div class="error-box" id="error-box">
+          <p id="error-message"></p>
+          <button class="btn-primary" id="retry-btn" style="display:none">Try Again</button>
+        </div>
+      </section>
+
+      <section class="loading" id="loading">
+        <svg class="loading-petal" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <g transform="translate(50,50)">
+            <ellipse cx="0" cy="-22" rx="10" ry="22" fill="#e8b4b8" opacity="0.75" transform="rotate(0)"/>
+            <ellipse cx="0" cy="-22" rx="10" ry="22" fill="#c9a961" opacity="0.7" transform="rotate(72)"/>
+            <ellipse cx="0" cy="-22" rx="10" ry="22" fill="#a8b89a" opacity="0.7" transform="rotate(144)"/>
+            <ellipse cx="0" cy="-22" rx="10" ry="22" fill="#8ca8c4" opacity="0.7" transform="rotate(216)"/>
+            <ellipse cx="0" cy="-22" rx="10" ry="22" fill="#d4a5a5" opacity="0.75" transform="rotate(288)"/>
+          </g>
+        </svg>
+        <p class="loading-text">Studying your unique coloring…</p>
+      </section>
+
+      <section class="results card" id="results">
+        <div class="season-header">
+          <div class="family-label" id="family-label">Family</div>
+          <h2 class="season-name" id="season-name">Season</h2>
+          <div class="attr-row" id="attr-row"></div>
+          <p class="description" id="description"></p>
+        </div>
+
+        <div class="palette-section">
+          <h3 class="palette-title">Your Palette</h3>
+          <p class="palette-subtitle">colors that bring out your natural radiance</p>
+          <div class="swatch-grid" id="palette-grid"></div>
+        </div>
+
+        <div class="avoid-section">
+          <h3 class="palette-title">Colors to Avoid</h3>
+          <p class="palette-subtitle">hues that may dull your complexion</p>
+          <div class="swatch-grid" id="avoid-grid"></div>
+        </div>
+
+        <div class="restart-row">
+          <button class="btn-secondary" id="restart-btn">Analyze Another Photo</button>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      Made with care · Petal Palettes
+    </footer>
+  </div>
+
+  <script>
+    const SYSTEM_PROMPT = `You are an expert color analyst trained in the 12-season color analysis system.
+When given a photo of a person's face, analyze the following:
+
+1. Skin undertone (warm, cool, or neutral)
+2. Skin depth (light, medium, or deep)
+3. Contrast level between skin, hair, and eyes (low, medium, or high)
+4. Hair color and tone
+5. Eye color and tone
+
+Based on this analysis, determine which of the 12 seasons best fits this person:
+True Spring, Light Spring, Bright Spring, True Summer, Light Summer, Soft Summer,
+True Autumn, Soft Autumn, Dark Autumn, True Winter, Dark Winter, Bright Winter.
+
+Respond ONLY in JSON with no markdown or backticks, using this exact structure:
+{
+  "season": "[season name]",
+  "family": "[Spring/Summer/Autumn/Winter]",
+  "undertone": "[warm/cool/neutral]",
+  "depth": "[light/medium/deep]",
+  "contrast": "[low/medium/high]",
+  "description": "[2-3 sentences describing the person's coloring and why they are this season]",
+  "colors": [
+    { "name": "[color name]", "hex": "[hex code]" },
+    { "name": "[color name]", "hex": "[hex code]" },
+    { "name": "[color name]", "hex": "[hex code]" },
+    { "name": "[color name]", "hex": "[hex code]" },
+    { "name": "[color name]", "hex": "[hex code]" },
+    { "name": "[color name]", "hex": "[hex code]" },
+    { "name": "[color name]", "hex": "[hex code]" },
+    { "name": "[color name]", "hex": "[hex code]" }
+  ],
+  "avoid": [
+    { "name": "[color name]", "hex": "[hex code]" },
+    { "name": "[color name]", "hex": "[hex code]" },
+    { "name": "[color name]", "hex": "[hex code]" }
+  ]
+}
+
+If the image does not clearly show a human face, or the lighting makes analysis impossible, respond with:
+{"error": "no_face", "message": "[friendly explanation of what would make a better photo]"}`;
+
+    const API_URL = 'https://api.anthropic.com/v1/messages';
+    const MODEL = 'claude-sonnet-4-20250514';
+    const API_KEY_STORAGE = 'petal_palettes_api_key';
+
+    const el = {
+      apiKey: document.getElementById('api-key'),
+      uploadArea: document.getElementById('upload-area'),
+      fileInput: document.getElementById('file-input'),
+      previewWrapper: document.getElementById('preview-wrapper'),
+      previewImage: document.getElementById('preview-image'),
+      analyzeBtn: document.getElementById('analyze-btn'),
+      changePhotoBtn: document.getElementById('change-photo-btn'),
+      errorBox: document.getElementById('error-box'),
+      errorMessage: document.getElementById('error-message'),
+      retryBtn: document.getElementById('retry-btn'),
+      loading: document.getElementById('loading'),
+      results: document.getElementById('results'),
+      familyLabel: document.getElementById('family-label'),
+      seasonName: document.getElementById('season-name'),
+      attrRow: document.getElementById('attr-row'),
+      description: document.getElementById('description'),
+      paletteGrid: document.getElementById('palette-grid'),
+      avoidGrid: document.getElementById('avoid-grid'),
+      restartBtn: document.getElementById('restart-btn'),
+      uploadCard: document.getElementById('upload-card'),
+    };
+
+    let currentImage = null;
+
+    const savedKey = localStorage.getItem(API_KEY_STORAGE);
+    if (savedKey) el.apiKey.value = savedKey;
+    el.apiKey.addEventListener('change', () => {
+      localStorage.setItem(API_KEY_STORAGE, el.apiKey.value.trim());
+    });
+
+    el.fileInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
+
+    ['dragenter', 'dragover'].forEach(evt => {
+      el.uploadArea.addEventListener(evt, (e) => {
+        e.preventDefault();
+        el.uploadArea.classList.add('dragging');
+      });
+    });
+    ['dragleave', 'drop'].forEach(evt => {
+      el.uploadArea.addEventListener(evt, (e) => {
+        e.preventDefault();
+        el.uploadArea.classList.remove('dragging');
+      });
+    });
+    el.uploadArea.addEventListener('drop', (e) => {
+      const file = e.dataTransfer.files[0];
+      if (file) handleFile(file);
+    });
+
+    el.changePhotoBtn.addEventListener('click', resetUpload);
+    el.restartBtn.addEventListener('click', () => {
+      resetUpload();
+      el.results.classList.remove('active');
+      el.uploadCard.style.display = '';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+    el.analyzeBtn.addEventListener('click', analyze);
+    el.retryBtn.addEventListener('click', analyze);
+
+    function handleFile(file) {
+      hideError();
+      if (!file) return;
+      if (!/^image\/(png|jpeg|jpg)$/.test(file.type)) {
+        showError('Please upload a PNG or JPEG image.');
+        return;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        showError('Photo is too large. Please choose an image under 10MB.');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        currentImage = {
+          dataUrl: e.target.result,
+          mediaType: file.type === 'image/jpeg' || file.type === 'image/jpg' ? 'image/jpeg' : 'image/png',
+          base64: e.target.result.split(',')[1],
+        };
+        el.previewImage.src = currentImage.dataUrl;
+        el.uploadArea.style.display = 'none';
+        el.previewWrapper.classList.add('active');
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function resetUpload() {
+      currentImage = null;
+      el.fileInput.value = '';
+      el.previewImage.src = '';
+      el.uploadArea.style.display = '';
+      el.previewWrapper.classList.remove('active');
+      hideError();
+    }
+
+    function showError(msg, showRetry = false) {
+      el.errorMessage.textContent = msg;
+      el.retryBtn.style.display = showRetry ? '' : 'none';
+      el.errorBox.classList.add('active');
+    }
+
+    function hideError() {
+      el.errorBox.classList.remove('active');
+      el.retryBtn.style.display = 'none';
+    }
+
+    async function analyze() {
+      hideError();
+      const apiKey = el.apiKey.value.trim();
+      if (!apiKey) {
+        showError('Please enter your Anthropic API key above first.');
+        return;
+      }
+      if (!currentImage) {
+        showError('Please upload a photo first.');
+        return;
+      }
+
+      localStorage.setItem(API_KEY_STORAGE, apiKey);
+
+      el.uploadCard.style.display = 'none';
+      el.loading.classList.add('active');
+      el.results.classList.remove('active');
+
+      try {
+        const response = await fetch(API_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': apiKey,
+            'anthropic-version': '2023-06-01',
+            'anthropic-dangerous-direct-browser-access': 'true',
+          },
+          body: JSON.stringify({
+            model: MODEL,
+            max_tokens: 1500,
+            system: SYSTEM_PROMPT,
+            messages: [
+              {
+                role: 'user',
+                content: [
+                  {
+                    type: 'image',
+                    source: {
+                      type: 'base64',
+                      media_type: currentImage.mediaType,
+                      data: currentImage.base64,
+                    },
+                  },
+                  {
+                    type: 'text',
+                    text: 'Please analyze this photo and return my 12-season color analysis as JSON.',
+                  },
+                ],
+              },
+            ],
+          }),
+        });
+
+        if (!response.ok) {
+          const errText = await response.text();
+          let errMsg = 'Analysis failed';
+          try {
+            const errJson = JSON.parse(errText);
+            errMsg = errJson.error?.message || errMsg;
+          } catch (_) {}
+          throw new Error(errMsg);
+        }
+
+        const data = await response.json();
+        const text = data.content?.[0]?.text?.trim() ?? '';
+        let parsed;
+        try {
+          parsed = JSON.parse(text);
+        } catch (_) {
+          const match = text.match(/\{[\s\S]*\}/);
+          if (!match) throw new Error('The analysis returned an unexpected response. Please try again.');
+          parsed = JSON.parse(match[0]);
+        }
+
+        el.loading.classList.remove('active');
+
+        if (parsed.error === 'no_face') {
+          el.uploadCard.style.display = '';
+          showError(parsed.message || 'We couldn\'t clearly see your face. Please try a well-lit, front-facing portrait.');
+          return;
+        }
+
+        renderResults(parsed);
+      } catch (err) {
+        el.loading.classList.remove('active');
+        el.uploadCard.style.display = '';
+        showError(err.message || 'Something went wrong while analyzing your photo.', true);
+      }
+    }
+
+    function renderResults(r) {
+      el.familyLabel.textContent = r.family ? `${r.family} Family` : '';
+      el.seasonName.textContent = r.season || '';
+      el.description.textContent = r.description || '';
+
+      el.attrRow.innerHTML = '';
+      const attrs = [
+        ['Undertone', r.undertone],
+        ['Depth', r.depth],
+        ['Contrast', r.contrast],
+      ];
+      attrs.forEach(([label, value]) => {
+        if (!value) return;
+        const chip = document.createElement('div');
+        chip.className = 'attr-chip';
+        chip.innerHTML = `${label} · <strong>${value}</strong>`;
+        el.attrRow.appendChild(chip);
+      });
+
+      renderSwatches(el.paletteGrid, r.colors || [], false);
+      renderSwatches(el.avoidGrid, r.avoid || [], true);
+
+      el.results.classList.add('active');
+      el.results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function renderSwatches(container, list, isAvoid) {
+      container.innerHTML = '';
+      list.forEach(({ name, hex }) => {
+        if (!hex) return;
+        const wrap = document.createElement('div');
+        wrap.className = 'swatch';
+        const petal = document.createElement('div');
+        petal.className = 'swatch-petal' + (isAvoid ? ' avoid' : '');
+        petal.style.background = hex;
+        petal.title = `${name} (${hex})`;
+        const nameEl = document.createElement('div');
+        nameEl.className = 'swatch-name';
+        nameEl.textContent = name || '';
+        const hexEl = document.createElement('div');
+        hexEl.className = 'swatch-hex';
+        hexEl.textContent = (hex || '').toUpperCase();
+        wrap.appendChild(petal);
+        wrap.appendChild(nameEl);
+        wrap.appendChild(hexEl);
+        container.appendChild(wrap);
+      });
+    }
+  </script>
+</body>
+</html>
